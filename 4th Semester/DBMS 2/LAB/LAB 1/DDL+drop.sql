@@ -1,4 +1,3 @@
-
 drop table prereq;
 drop table time_slot;
 drop table advisor;
@@ -106,12 +105,12 @@ create table student
 	);
 
 create table takes
-	(ID			varchar(5), 
-	 course_id		varchar(8),
-	 sec_id			varchar(8), 
-	 semester		varchar(6),
-	 year			numeric(4,0),
-	 grade		        varchar(2),
+	( ID	varchar(5), 
+	 course_id	varchar(8),
+	 sec_id	varchar(8), 
+	 semester varchar(6),
+	 year numeric(4,0),
+	 grade varchar(2),
 	 primary key (ID, course_id, sec_id, semester, year),
 	 foreign key (course_id, sec_id, semester, year) references section (course_id, sec_id, semester, year)
 		on delete cascade,

@@ -148,17 +148,18 @@ insert into prereq values ('CS-319', 'CS-101');
 insert into prereq values ('CS-347', 'CS-101');
 insert into prereq values ('EE-181', 'PHY-101');
 
+----------------------------------
 
-
---1 
+----------------1-----------------
 select title
 from course
 where dept_name =  'Comp. Sci.' and credits = 3;
---2
+
+----------------2-----------------
 select  ID ,name,tot_cred
 from student natural join takes;
 
---3
+----------------3-----------------
 select name,dept_name
 from instructor i
 where i.ID not in (
@@ -166,7 +167,7 @@ where i.ID not in (
     from teaches
 );
 
---4
+----------------4-----------------
 select title
 from course c
 where c.course_id not in(
@@ -174,7 +175,7 @@ where c.course_id not in(
     from prereq
 );
 
---5
+----------------5-----------------
 select name from(
     select rownum r,name from(
         select name 
@@ -183,25 +184,28 @@ select name from(
     ) 
 )where r = 2 or r = 3 or r =5;
 
---6
+----------------6-----------------
 select i.name,c.title
 from instructor i ,teaches te,section s,course c,takes t
 where i.ID =te.ID and te.course_id =s.course_id and s.course_id = c.course_id and s.course_id = t.course_id
 and
-t.ID not in (
-    select ID from student
+te.course_id not in (
+    select course_id from takes natural join student
 );
 
---7
+----------------7-----------------
 
-select c.title,count(s.ID),count(st.ID)
-from student s ,takes t,section se,course c,(select ID from student natural join takes where grade = 'A') st
-where s.ID =t.ID and t.course_id =se.course_id and se.course_id = c.course_id
-group by c.title;
+select distinct s1.title,
+COALESCE((s2.total_count * 100.0 / NULLIF(s1.total_count, 0)), 0) AS percentage_A
+from (select title,count(st.ID) as total_count from course c,student st,section s,takes t where st.ID = t.ID and t.course_id = s.course_id and s.course_id = c.course_id group by title)s1,
+(select title,count(st.ID) as total_count from course c,student st,section s,takes t where st.ID = t.ID and t.course_id = s.course_id and s.course_id = c.course_id and t.grade = 'A' group by title) s2
+where s1.title =s2.title;
 
---8
 
---9
+----------------8-----------------
+select 
+
+----------------9-----------------
 insert into student
 (
     select ID ,name,dept_name,0 from instructor where ID not in (
@@ -209,7 +213,7 @@ insert into student
     )
 );
 
---10
+----------------10-----------------
 update student
 set tot_cred = (
     select sum(credits)
@@ -218,18 +222,63 @@ set tot_cred = (
     AND t.ID = s.ID
 );
 
---11
+----------------11-----------------
 update instructor
-set salary =  10000 *(
-    select count(*)
+set salary =  10000 * select tot_course from (
+    select instructor.name, count(*) as tot_course
     from instructor natural join teaches natural join section
-)
+    group by instructor.name
+);
 
---12
+----------------12-----------------
 select c.room_number
 from section s,time_slot t,classroom c
 where s.time_slot_id = t.time_slot_id 
 having count(*)>1
 group by c.room_number;
 
---13
+----------------13----------------
+
+CREATE VIEW InstructorTimeSlotFall2017 AS
+SELECT
+    i.ID AS instructor_id,
+    i.name AS instructor_name,
+    c.course_id,
+    c.title AS course_title,
+    s.sec_id AS section_id,
+    COUNT(t.ID) AS student_count,
+    ts.time_slot_id,
+    ts.day,
+    ts.start_hr,
+    ts.start_min,
+    ts.end_hr,
+    ts.end_min
+FROM
+    instructor i, teaches t, section s, course c, time_slot ts, takes tk
+WHERE
+    i.ID = t.ID
+    AND t.course_id = s.course_id
+    AND s.course_id = c.course_id
+    AND s.time_slot_id = ts.time_slot_id
+    AND s.course_id = tk.course_id 
+    AND s.sec_id = tk.sec_id 
+    AND s.semester = tk.semester 
+    AND s.year = tk.year 
+    AND s.semester = 'Fall'
+    AND s.year = 2017
+GROUP BY
+    i.ID,
+    i.name,
+    c.course_id,
+    c.title,
+    s.sec_id,
+    ts.time_slot_id,
+    ts.day,
+    ts.start_hr,
+    ts.start_min,
+    ts.end_hr,
+    ts.end_min
+ORDER BY
+    i.ID,
+    c.course_id,
+    s.sec_id;
